@@ -1,4 +1,6 @@
+http://localhost:5173/
 # AAU YA NAHI! — SMART STUDENT ATTENDANCE MANAGER 🎓
+
 
 > **"Your Attendance. Your Choice. Your Call."**
 
