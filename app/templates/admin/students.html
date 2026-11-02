@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Accounts | Admin SmartAttend{% endblock %}
+{% block page_heading %}Student Directory & Account Management 👥{% endblock %}
+{% block page_subheading %}Register students, view attendance transcripts, and generate official credentials{% endblock %}
+
+{% block content %}
+<div class="dashboard-side-by-side" style="grid-template-columns: 1fr 380px;">
+
+  <!-- LEFT: Student Directory -->
+  <div class="dashboard-left">
+    <div class="dashboard-card">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-users" style="color: var(--primary);"></i> Enrolled Students Directory</h3>
+          <p>Total: {{ students|length }} students</p>
+        </div>
+
+        <!-- Search Form -->
+        <form method="GET" action="{{ url_for('admin.students') }}" style="display: flex; gap: 8px;">
+          <input type="text" name="q" value="{{ search }}" class="form-control" placeholder="Search name, roll, email..." style="width: 220px; padding: 6px 12px; font-size: 13px;">
+          <button type="submit" class="btn btn-sm btn-secondary"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </form>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Roll Number</th>
+              <th>Degree & Branch</th>
+              <th>Semester</th>
+              <th>Email</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for st in students %}
+            <tr>
+              <td>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <img src="{{ st.get_avatar_url() }}" alt="" style="width: 32px; height: 32px; border-radius: 50%;">
+                  <strong>{{ st.full_name }}</strong>
+                </div>
+              </td>
+              <td><code>{{ st.registration_number }}</code></td>
+              <td>{{ st.course }} ({{ st.branch[:15] }}...)</td>
+              <td>Sem {{ st.semester }}</td>
+              <td style="font-size: 12px; color: var(--text-muted);">{{ st.email }}</td>
+              <td>
+                <div style="display: flex; gap: 6px;">
+                  <a href="{{ url_for('admin.attendance_management', student_id=st.id) }}" class="btn btn-sm btn-secondary" title="View & Edit Attendance">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </a>
+                  <a href="{{ url_for('admin.export_student_pdf', student_id=st.id) }}" class="btn btn-sm btn-secondary" title="Download Certified PDF Report">
+                    <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Direct Student Registration Form -->
+  <div class="dashboard-right">
+    <div class="dashboard-card" style="border: 2px solid rgba(79, 70, 229, 0.25);">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-user-plus" style="color: var(--primary);"></i> Enroll New Student</h3>
+          <p>Create account and auto-enroll into semester subjects</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('admin.students') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          {{ form.full_name(class="form-control", placeholder="e.g. Rachel Green") }}
+          {% if form.full_name.errors %}<span class="form-error">{{ form.full_name.errors[0] }}</span>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Registration / Roll Number</label>
+          {{ form.registration_number(class="form-control", placeholder="e.g. RA2111003010099") }}
+          {% if form.registration_number.errors %}<span class="form-error">{{ form.registration_number.errors[0] }}</span>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Student Official Email</label>
+          {{ form.email(class="form-control", placeholder="rachel@smartattend.edu") }}
+          {% if form.email.errors %}<span class="form-error">{{ form.email.errors[0] }}</span>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          {{ form.username(class="form-control", placeholder="rachelgreen") }}
+          {% if form.username.errors %}<span class="form-error">{{ form.username.errors[0] }}</span>{% endif %}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Degree</label>
+            {{ form.course(class="form-select") }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Semester</label>
+            {{ form.semester(class="form-control") }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Branch / Department</label>
+          {{ form.branch(class="form-select") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Initial Password</label>
+          {{ form.password(class="form-control", placeholder="Temporary password") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          {{ form.confirm_password(class="form-control", placeholder="Re-enter password") }}
+        </div>
+
+        {{ form.submit(class="btn btn-gradient btn-block btn-lg") }}
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

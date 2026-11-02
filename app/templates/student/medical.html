@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+
+{% block title %}Medical Attendance Management | SmartAttend{% endblock %}
+{% block page_heading %}Medical Attendance & Certified Leave Management{% endblock %}
+{% block page_subheading %}Submit medical applications, track certificate verification, and monitor subject-wise medical credits{% endblock %}
+
+{% block content %}
+<!-- Medical Attendance High-Level Metrics -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Total Medical Classes</span>
+      <div class="stat-value" style="color: #0891b2;">{{ data.total_medical_classes }}</div>
+      <div class="stat-subtext">Approved Lecture Hours</div>
+    </div>
+    <div class="stat-icon icon-cyan">
+      <i class="fa-solid fa-notes-medical"></i>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Medical % Boost</span>
+      <div class="stat-value" style="color: var(--primary);">+{{ data.overall_medical_pct }}%</div>
+      <div class="stat-subtext">Added to Final Attendance</div>
+    </div>
+    <div class="stat-icon icon-purple">
+      <i class="fa-solid fa-chart-line"></i>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Approved Sick Days</span>
+      <div class="stat-value" style="color: #059669;">{{ data.total_approved_days }}</div>
+      <div class="stat-subtext">Medically Verified Days</div>
+    </div>
+    <div class="stat-icon icon-green">
+      <i class="fa-solid fa-calendar-day"></i>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Application Status</span>
+      <div class="stat-value" style="color: #d97706;">{{ data.pending_apps_count }}</div>
+      <div class="stat-subtext">
+        <span class="badge badge-warning">{{ data.pending_apps_count }} Pending</span>
+        <span class="badge badge-safe">{{ data.approved_apps_count }} Approved</span>
+      </div>
+    </div>
+    <div class="stat-icon icon-amber">
+      <i class="fa-solid fa-hourglass-half"></i>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-side-by-side">
+
+  <!-- LEFT: Form to Add Medical Record -->
+  <div class="dashboard-left">
+    <div class="dashboard-card" style="border: 2px solid rgba(79, 70, 229, 0.2);">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-file-circle-plus" style="color: var(--primary);"></i> Submit New Medical Application</h3>
+          <p>Upload authorized hospital or medical practitioner certificates</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('student.medical_attendance') }}" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          <label class="form-label">Subject for Attendance Adjustment</label>
+          {{ form.subject_id(class="form-select") }}
+          {% if form.subject_id.errors %}
+            <span class="form-error">{{ form.subject_id.errors[0] }}</span>
+          {% endif %}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Leave Start Date</label>
+            {{ form.start_date(class="form-control", id="startDate") }}
+            {% if form.start_date.errors %}
+              <span class="form-error">{{ form.start_date.errors[0] }}</span>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Leave End Date</label>
+            {{ form.end_date(class="form-control", id="endDate") }}
+            {% if form.end_date.errors %}
+              <span class="form-error">{{ form.end_date.errors[0] }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div style="font-size: 13px; font-weight: 600; margin-top: -10px; margin-bottom: 16px;" id="leaveDurationText">
+          Duration: 1 day
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Total Classes Missed in this Subject</label>
+          {{ form.requested_classes(class="form-control", placeholder="e.g. 5") }}
+          {% if form.requested_classes.errors %}
+            <span class="form-error">{{ form.requested_classes.errors[0] }}</span>
+          {% endif %}
+          <span class="form-help">Number of missed periods you are requesting medical attendance credit for.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Upload Medical Certificate / Hospital Discharge Form</label>
+          <div class="file-dropzone" onclick="document.getElementById('certUploadInput').click();">
+            <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+            <div class="dropzone-text">Click to browse or drop certificate file here</div>
+            <div class="dropzone-subtext">Supported: PDF, JPG, PNG (Max 16 MB)</div>
+          </div>
+          {{ form.certificate(id="certUploadInput", style="display:none;") }}
+          <div class="file-chosen-name" style="margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--primary); display: none;"></div>
+          {% if form.certificate.errors %}
+            <span class="form-error">{{ form.certificate.errors[0] }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Diagnosis / Reason for Absence</label>
+          {{ form.reason(class="form-textarea", rows=3, placeholder="State diagnosis or nature of illness (e.g. Typhoid fever, doctor recommended 5 days bed rest)") }}
+          {% if form.reason.errors %}
+            <span class="form-error">{{ form.reason.errors[0] }}</span>
+          {% endif %}
+        </div>
+
+        <!-- Security Rule Notice -->
+        <div style="padding: 12px; background: rgba(79, 70, 229, 0.05); border-radius: var(--radius-md); border: 1px solid rgba(79, 70, 229, 0.15); margin-bottom: 20px; font-size: 12px; color: var(--text-muted);">
+          <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i>
+          <strong>Cybersecurity & Anti-Tamper Notice:</strong> In accordance with university cybersecurity guidelines, all submitted certificates are digitally stamped. Once submitted, students cannot modify application details without administrative approval.
+        </div>
+
+        {{ form.submit(class="btn btn-gradient btn-block btn-lg") }}
+      </form>
+    </div>
+  </div>
+
+  <!-- RIGHT: Subject Medical Breakdown & Application Tracker -->
+  <div class="dashboard-right">
+
+    <!-- Subject Medical Breakdown Table -->
+    <div class="dashboard-card" style="border: 2px solid rgba(6, 182, 212, 0.3);">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3 style="color: #0891b2;"><i class="fa-solid fa-stethoscope"></i> Subject Medical Breakdown</h3>
+          <p>Approved medical hours across all enrolled subjects</p>
+        </div>
+      </div>
+
+      <table class="medical-subject-table">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Medical Classes</th>
+            <th style="text-align: right;">Medical Attendance %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for med in data.medical_breakdown %}
+          <tr>
+            <td>
+              <div style="font-weight: 600;">{{ med.subject_name }}</div>
+              <div style="font-size: 11px; color: var(--text-muted);">{{ med.subject_code }} ({{ med.total_classes }} total classes)</div>
+            </td>
+            <td>
+              <span class="medical-pill">
+                <i class="fa-solid fa-notes-medical"></i> {{ med.medical_classes }} classes
+              </span>
+            </td>
+            <td style="text-align: right; font-weight: 700; color: #0891b2;">
+              +{{ med.medical_percentage }}%
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Application Status List -->
+    <div class="dashboard-card">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> My Medical Applications History</h3>
+          <p>Real-time review and verification tracking</p>
+        </div>
+      </div>
+
+      {% if applications %}
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          {% for app in applications %}
+          <div style="padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-card-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div>
+                <span style="font-weight: 700; font-size: 14px;">{{ app.application_number }}</span>
+                <span style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">
+                  {{ app.created_at.strftime('%b %d, %Y') }}
+                </span>
+              </div>
+              <span class="badge {{ app.status_badge_class }}">
+                {% if app.status == 'Approved' %}<i class="fa-solid fa-check"></i>
+                {% elif app.status == 'Pending' %}<i class="fa-solid fa-hourglass-half"></i>
+                {% else %}<i class="fa-solid fa-xmark"></i>{% endif %}
+                {{ app.status }}
+              </span>
+            </div>
+
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+              {{ app.subject.name }} ({{ app.subject.code }})
+            </div>
+
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+              Dates: <strong>{{ app.start_date.strftime('%b %d, %Y') }}</strong> to <strong>{{ app.end_date.strftime('%b %d, %Y') }}</strong> ({{ app.duration_days }} days)
+              <br/>
+              Requested: <strong>{{ app.requested_classes }} classes</strong> | Approved: <strong style="color: #059669;">{{ app.approved_classes }} classes</strong>
+            </div>
+
+            <div style="font-size: 12px; background: var(--bg-card); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); margin-bottom: 10px;">
+              <strong>Reason:</strong> {{ app.reason }}
+            </div>
+
+            {% if app.admin_remarks %}
+            <div style="font-size: 12px; background: rgba(79, 70, 229, 0.08); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid rgba(79, 70, 229, 0.2); margin-bottom: 10px; color: var(--primary);">
+              <strong>Admin Remarks:</strong> {{ app.admin_remarks }}
+              {% if app.reviewer %}
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Reviewed by: {{ app.reviewer.full_name }}</div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+              <!-- Secure Document Preview -->
+              <button class="btn btn-sm btn-secondary" data-preview-cert="{{ url_for('files.get_medical_file', filename=app.certificate_filename) }}" data-filename="{{ app.certificate_original_name }}">
+                <i class="fa-solid fa-file-lines"></i> View Certificate
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+          <i class="fa-regular fa-folder-open" style="font-size: 36px; margin-bottom: 8px; opacity: 0.5;"></i>
+          <p>No medical applications submitted yet.</p>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

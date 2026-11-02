@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}System Settings | Admin SmartAttend{% endblock %}
+{% block page_heading %}Institutional Policy & Formula Settings ⚙️{% endblock %}
+{% block page_subheading %}Configure attendance thresholds, medical credit formulas, and institutional identity{% endblock %}
+
+{% block content %}
+<div class="dashboard-side-by-side" style="grid-template-columns: 1fr 400px;">
+
+  <!-- LEFT: Settings Form -->
+  <div class="dashboard-left">
+    <div class="dashboard-card" style="border: 2px solid rgba(79, 70, 229, 0.25);">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-sliders" style="color: var(--primary);"></i> Attendance & Medical Calculation Engine</h3>
+          <p>Changes apply globally to all student dashboards, reports, and calculators</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('admin.settings') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          <label class="form-label">Medical Attendance Calculation Formula</label>
+          {{ form.medical_formula_mode(class="form-select") }}
+          <span class="form-help">Select the statutory method your institution uses to credit medical leaves.</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div class="form-group">
+            <label class="form-label">Required Safe Threshold (%)</label>
+            {{ form.required_attendance_threshold(class="form-control") }}
+            <span class="form-help">Minimum percentage required for exam eligibility (Default: 75.0%)</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Warning Threshold (%)</label>
+            {{ form.warning_attendance_threshold(class="form-control") }}
+            <span class="form-help">Triggers early warning alerts (Default: 65.0%)</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div class="form-group">
+            <label class="form-label">Max Medical Boost Cap (%)</label>
+            {{ form.max_medical_benefit_percent(class="form-control") }}
+            <span class="form-help">Upper limit of percentage added via medical certificates (Default: 15.0%)</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Max Medical Excused Days</label>
+            {{ form.max_medical_days_allowed(class="form-control") }}
+            <span class="form-help">Maximum allowable sick leave days per semester (Default: 30)</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Medical Attendance Weight Factor</label>
+          {{ form.medical_weight(class="form-control") }}
+          <span class="form-help">Multiplier if weighted formula is active (1.0 = full hour credit, 0.5 = half credit)</span>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 24px 0;">
+
+        <div class="form-group">
+          <label class="form-label">University / Institution Full Name</label>
+          {{ form.university_name(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Current Academic Semester Title</label>
+          {{ form.semester_name(class="form-control") }}
+        </div>
+
+        {{ form.submit(class="btn btn-gradient btn-lg btn-block") }}
+      </form>
+    </div>
+  </div>
+
+  <!-- RIGHT: Formula Explanation Cards -->
+  <div class="dashboard-right">
+    <div class="dashboard-card" style="background: var(--bg-card-subtle);">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-square-root-variable" style="color: var(--primary);"></i> Formula Comparison Guide</h3>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13px;">
+        <div style="padding: 12px; background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+          <strong style="color: var(--primary);">1. Standard Addition (Default):</strong>
+          <p style="color: var(--text-muted); margin-top: 4px;">
+            <code>Final % = (Attended + Medical) / Total × 100</code>
+            <br>
+            Directly adds approved medical classes to the student's attended count.
+          </p>
+        </div>
+
+        <div style="padding: 12px; background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+          <strong style="color: #0891b2;">2. Duty Leave / Exemption:</strong>
+          <p style="color: var(--text-muted); margin-top: 4px;">
+            <code>Final % = Attended / (Total - Medical) × 100</code>
+            <br>
+            Excuses medical hours entirely, reducing the denominator required.
+          </p>
+        </div>
+
+        <div style="padding: 12px; background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+          <strong style="color: #f59e0b;">3. Capped Benefit:</strong>
+          <p style="color: var(--text-muted); margin-top: 4px;">
+            <code>Regular % + min(Medical %, Max Cap)</code>
+            <br>
+            Prevents students from passing solely on medical certificates if regular attendance was excessively low.
+          </p>
+        </div>
+
+        <div style="padding: 12px; background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+          <strong style="color: #10b981;">4. Weighted Factor:</strong>
+          <p style="color: var(--text-muted); margin-top: 4px;">
+            <code>(Attended + (Medical × Weight)) / Total × 100</code>
+            <br>
+            Applies partial credit (e.g. 75% or 50% benefit) to medical absences.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

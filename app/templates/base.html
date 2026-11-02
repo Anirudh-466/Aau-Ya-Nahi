@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ app_name }}{% endblock %} | Intelligent Student Attendance & Medical Management</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo.svg') }}">
+
+  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Core Design System CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+
+  <!-- Chart.js for Visual Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <div class="brand-text">
+          <h2>SmartAttend</h2>
+          <span>Attendance & Medical</span>
+        </div>
+      </div>
+
+      <div class="sidebar-menu">
+        {% if current_user.is_authenticated and current_user.is_student %}
+          <div class="menu-category">Main Menu</div>
+          <a href="{{ url_for('student.dashboard') }}" class="nav-item {% if request.endpoint == 'student.dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-table-columns"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="{{ url_for('student.my_attendance') }}" class="nav-item {% if request.endpoint == 'student.my_attendance' %}active{% endif %}">
+            <i class="fa-solid fa-calendar-check"></i>
+            <span>My Attendance</span>
+          </a>
+          <a href="{{ url_for('student.medical_attendance') }}" class="nav-item {% if request.endpoint == 'student.medical_attendance' %}active{% endif %}">
+            <i class="fa-solid fa-notes-medical"></i>
+            <span>Medical Attendance</span>
+          </a>
+          <a href="{{ url_for('student.calculator') }}" class="nav-item {% if request.endpoint == 'student.calculator' %}active{% endif %}">
+            <i class="fa-solid fa-calculator"></i>
+            <span>Attendance Calculator</span>
+          </a>
+          <a href="{{ url_for('student.reports') }}" class="nav-item {% if request.endpoint == 'student.reports' %}active{% endif %}">
+            <i class="fa-solid fa-file-pdf"></i>
+            <span>Reports & Exports</span>
+          </a>
+
+          <div class="menu-category">Account</div>
+          <a href="{{ url_for('student.profile') }}" class="nav-item {% if request.endpoint == 'student.profile' %}active{% endif %}">
+            <i class="fa-solid fa-user-gear"></i>
+            <span>Profile & Settings</span>
+          </a>
+          <a href="{{ url_for('auth.logout') }}" class="nav-item">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <span>Logout</span>
+          </a>
+
+        {% elif current_user.is_authenticated and current_user.is_admin %}
+          <div class="menu-category">Admin Management</div>
+          <a href="{{ url_for('admin.dashboard') }}" class="nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-gauge-high"></i>
+            <span>Admin Dashboard</span>
+          </a>
+          <a href="{{ url_for('admin.medical_requests') }}" class="nav-item {% if request.endpoint == 'admin.medical_requests' %}active{% endif %}">
+            <i class="fa-solid fa-file-medical"></i>
+            <span>Verify Medical Leave</span>
+          </a>
+          <a href="{{ url_for('admin.attendance_management') }}" class="nav-item {% if request.endpoint == 'admin.attendance_management' %}active{% endif %}">
+            <i class="fa-solid fa-clipboard-user"></i>
+            <span>Update Attendance</span>
+          </a>
+          <a href="{{ url_for('admin.subjects') }}" class="nav-item {% if request.endpoint == 'admin.subjects' %}active{% endif %}">
+            <i class="fa-solid fa-book-bookmark"></i>
+            <span>Manage Subjects</span>
+          </a>
+          <a href="{{ url_for('admin.students') }}" class="nav-item {% if request.endpoint == 'admin.students' %}active{% endif %}">
+            <i class="fa-solid fa-users"></i>
+            <span>Student Accounts</span>
+          </a>
+          <a href="{{ url_for('admin.settings') }}" class="nav-item {% if request.endpoint == 'admin.settings' %}active{% endif %}">
+            <i class="fa-solid fa-sliders"></i>
+            <span>System Settings</span>
+          </a>
+          <a href="{{ url_for('admin.audit_logs') }}" class="nav-item {% if request.endpoint == 'admin.audit_logs' %}active{% endif %}">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Security Audit Logs</span>
+          </a>
+          <a href="{{ url_for('auth.logout') }}" class="nav-item">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <span>Logout</span>
+          </a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="nav-item active">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            <span>Login</span>
+          </a>
+          <a href="{{ url_for('auth.register') }}" class="nav-item">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Register</span>
+          </a>
+        {% endif %}
+      </div>
+
+      {% if current_user.is_authenticated %}
+      <div class="sidebar-footer">
+        <div class="user-quick-profile">
+          <img src="{{ current_user.get_avatar_url() }}" alt="{{ current_user.full_name }}" class="user-avatar-mini">
+          <div class="user-info-mini">
+            <div class="user-name-mini">{{ current_user.full_name }}</div>
+            <div class="user-role-mini">
+              {% if current_user.is_admin %}Administrator{% else %}{{ current_user.registration_number or 'Student' }}{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+      <!-- Top Navbar -->
+      <header class="top-navbar">
+        <div class="navbar-left">
+          <button class="mobile-toggle" id="mobileMenuToggle" aria-label="Toggle navigation menu">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="page-title">
+            <h1>{% block page_heading %}Student Attendance Dashboard{% endblock %}</h1>
+            <p>{% block page_subheading %}Monitor attendance, medical leaves, and eligibility in real-time{% endblock %}</p>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <!-- Institutional Semester Tag -->
+          <div class="d-none d-md-flex align-items-center" style="display:flex; align-items:center; gap:8px;">
+            <span class="badge badge-primary">
+              <i class="fa-solid fa-landmark"></i> {{ system_settings.get('semester_name', 'Spring 2026') }}
+            </span>
+          </div>
+
+          <!-- Dark Mode Toggle Button -->
+          <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
+            <i class="fa-solid fa-moon" id="themeIcon"></i>
+          </button>
+
+          {% if current_user.is_authenticated %}
+          <!-- User Dropdown Quick Info -->
+          <a href="{% if current_user.is_student %}{{ url_for('student.profile') }}{% else %}#{% endif %}" class="btn btn-secondary btn-sm" style="border-radius: var(--radius-full);">
+            <i class="fa-regular fa-user"></i>
+            <span>{{ current_user.full_name.split()[0] }}</span>
+          </a>
+          {% endif %}
+        </div>
+      </header>
+
+      <!-- Page Content Body -->
+      <main class="page-container">
+        <!-- Flash Alert Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages-wrapper" style="margin-bottom: 24px;">
+              {% for category, message in messages %}
+                <div class="flash-alert alert-{{ category }}" style="
+                  padding: 14px 18px;
+                  border-radius: var(--radius-md);
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  font-size: 14px;
+                  font-weight: 500;
+                  margin-bottom: 10px;
+                  {% if category == 'success' %}
+                    background: var(--safe-bg); color: #065f46; border: 1px solid var(--safe-border);
+                  {% elif category == 'danger' %}
+                    background: var(--danger-bg); color: #991b1b; border: 1px solid var(--danger-border);
+                  {% elif category == 'warning' %}
+                    background: var(--warning-bg); color: #92400e; border: 1px solid var(--warning-border);
+                  {% else %}
+                    background: var(--primary-subtle); color: var(--primary); border: 1px solid rgba(79, 70, 229, 0.2);
+                  {% endif %}
+                ">
+                  <i class="{% if category == 'success' %}fa-solid fa-circle-check{% elif category == 'danger' %}fa-solid fa-circle-exclamation{% elif category == 'warning' %}fa-solid fa-triangle-exclamation{% else %}fa-solid fa-circle-info{% endif %}"></i>
+                  <span style="flex: 1;">{{ message }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Medical Certificate Preview Modal (Shared Across App) -->
+  <div class="modal-overlay" id="certPreviewModal">
+    <div class="modal-window" style="max-width: 750px;">
+      <div class="modal-header">
+        <h3 id="certPreviewTitle"><i class="fa-solid fa-file-medical"></i> Medical Certificate Verification</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" id="certPreviewContainer" style="text-align: center; background: var(--bg-card-subtle);">
+        <p>Loading document preview...</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-cancel-btn">Close Viewer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Core JavaScript Scripts -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/medical.js') }}"></script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

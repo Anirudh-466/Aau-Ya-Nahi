@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Attendance Calculator & Predictor | SmartAttend{% endblock %}
+{% block page_heading %}Smart Attendance Calculator & Recovery Predictor ⚡{% endblock %}
+{% block page_subheading %}Instant real-time calculations • Attendance forecasting • Recovery targets • Medical adjustments{% endblock %}
+
+{% block content %}
+<!-- Quick Subject Presets Bar -->
+<div class="dashboard-card" style="margin-bottom: 24px; padding: 18px 24px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <span style="font-weight: 700; font-size: 14px;"><i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> Quick Load from Enrolled Subjects:</span>
+      <span style="font-size: 13px; color: var(--text-muted); margin-left: 6px;">Click any subject to load real figures into the calculator</span>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+      {% for s in data.subjects %}
+      <button class="btn btn-sm btn-secondary btn-load-subject" 
+              data-code="{{ s.subject_code }}" 
+              data-name="{{ s.subject_name }}" 
+              data-total="{{ s.total_classes }}" 
+              data-attended="{{ s.attended_classes }}" 
+              data-medical="{{ s.medical_classes }}">
+        <strong>{{ s.subject_code }}</strong> ({{ s.final_percentage }}%)
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-side-by-side">
+
+  <!-- LEFT: Interactive Inputs -->
+  <div class="dashboard-left">
+    <div class="dashboard-card" style="border: 2px solid rgba(79, 70, 229, 0.25);">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-sliders" style="color: var(--primary);"></i> Attendance Parameters</h3>
+          <p>Modify numbers to see results update live without reloading</p>
+        </div>
+      </div>
+
+      <div id="calcError" class="flash-alert alert-danger" style="display: none; margin-bottom: 16px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; background: var(--danger-bg); color: #991b1b; border: 1px solid var(--danger-border);"></div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="form-group">
+          <label class="form-label">Total Classes Conducted</label>
+          <input type="number" id="calcTotal" class="form-control" value="40" min="0" max="500">
+          <span class="form-help">Total lectures held so far</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Classes Attended</label>
+          <input type="number" id="calcAttended" class="form-control" value="28" min="0" max="500">
+          <span class="form-help">Physically attended lectures</span>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="form-group">
+          <label class="form-label">Approved Medical Classes</label>
+          <input type="number" id="calcMedical" class="form-control" value="4" min="0" max="100">
+          <span class="form-help">Certified medical hours</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Upcoming Classes to Attend</label>
+          <input type="number" id="calcUpcoming" class="form-control" value="10" min="0" max="100">
+          <span class="form-help">Future classes planned to attend</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" style="display: flex; justify-content: space-between;">
+          <span>Target Attendance Percentage Goal</span>
+          <strong id="targetValueLabel" style="color: var(--primary);">75%</strong>
+        </label>
+        <input type="range" id="calcTarget" min="60" max="95" step="1" value="75" style="width: 100%; accent-color: var(--primary);" oninput="document.getElementById('targetValueLabel').textContent = this.value + '%';">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+          <span>60% (Pass)</span>
+          <span>75% (Exam Requirement)</span>
+          <span>85% (Scholarship Tier)</span>
+        </div>
+      </div>
+
+      <!-- Configurable Formula Policy Info -->
+      <div style="margin-top: 24px; padding: 14px; border-radius: var(--radius-md); background: var(--bg-card-subtle); border: 1px solid var(--border-color); font-size: 12px;">
+        <div style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">
+          <i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> Active Institutional Calculation Policy:
+        </div>
+        <div style="color: var(--text-muted);">
+          Your university is currently configured to use <strong>{{ data.formula_info.mode.replace('_', ' ').title() }}</strong> mode.
+          {% if data.formula_info.mode == 'standard_addition' %}
+            Formula: <code>Final % = (Attended + Medical Approved) / Total Conducted × 100</code>
+          {% elif data.formula_info.mode == 'exemption_subtraction' %}
+            Formula: <code>Final % = Attended / (Total Conducted - Medical Approved) × 100</code> (Duty Exemption)
+          {% elif data.formula_info.mode == 'capped_benefit' %}
+            Formula: <code>Final % = Regular % + min(Medical %, {{ data.formula_info.max_benefit }}%)</code> (Capped Benefit)
+          {% else %}
+            Formula: <code>Final % = (Attended + (Medical × Weight)) / Total Conducted × 100</code>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Dynamic Real-time Calculations Output -->
+  <div class="dashboard-right">
+    <div class="dashboard-card" style="border: 2px solid rgba(6, 182, 212, 0.4); box-shadow: 0 4px 20px rgba(6, 182, 212, 0.1);">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3 style="color: #0891b2;"><i class="fa-solid fa-chart-pie"></i> Real-time Results</h3>
+          <p>Instant projection computed directly in your browser</p>
+        </div>
+        <div id="calcStatusBadge" class="badge badge-safe">
+          <i class="fa-solid fa-circle-check"></i> Safe Zone
+        </div>
+      </div>
+
+      <div id="calcStatusDesc" style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; padding: 10px 14px; background: var(--bg-card-subtle); border-radius: var(--radius-sm); border-left: 3px solid var(--primary);">
+        Loading status...
+      </div>
+
+      <!-- Results Grid -->
+      <div class="calc-result-grid" style="grid-template-columns: 1fr 1fr; margin-top: 0;">
+        <!-- Current Regular % -->
+        <div class="calc-pill-metric">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Regular Attendance</div>
+          <div class="calc-pill-value" id="outRegularPct" style="color: var(--primary);">0.0%</div>
+          <div style="font-size: 11px; color: var(--text-light); margin-top: 2px;">Without medical hours</div>
+        </div>
+
+        <!-- Attendance After Medical Adjustment -->
+        <div class="calc-pill-metric" style="border-color: rgba(6, 182, 212, 0.4); background: rgba(6, 182, 212, 0.04);">
+          <div style="font-size: 12px; font-weight: 600; color: #0891b2; text-transform: uppercase;">With Medical Credit</div>
+          <div class="calc-pill-value" id="outAdjustedPct" style="color: #0891b2;">0.0%</div>
+          <div style="font-size: 11px; color: var(--text-light); margin-top: 2px;">Official recorded attendance</div>
+        </div>
+
+        <!-- Required Classes to Reach Target -->
+        <div class="calc-pill-metric" style="border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.04);">
+          <div style="font-size: 12px; font-weight: 600; color: #d97706; text-transform: uppercase;">Classes to Reach Target</div>
+          <div class="calc-pill-value" id="outRequiredClasses" style="color: #d97706;">0 Classes</div>
+          <div style="font-size: 11px; color: var(--text-light); margin-top: 2px;">Consecutive attendances needed</div>
+        </div>
+
+        <!-- Maximum Bunkable Classes -->
+        <div class="calc-pill-metric" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.04);">
+          <div style="font-size: 12px; font-weight: 600; color: #059669; text-transform: uppercase;">Safe Margin to Skip</div>
+          <div class="calc-pill-value" id="outMaxBunks" style="color: #059669;">0 Classes</div>
+          <div style="font-size: 11px; color: var(--text-light); margin-top: 2px;">Can miss without dropping below goal</div>
+        </div>
+      </div>
+
+      <!-- Projection After Upcoming Classes -->
+      <div style="margin-top: 20px; padding: 16px; border-radius: var(--radius-md); background: linear-gradient(135deg, rgba(79, 70, 229, 0.06) 0%, rgba(6, 182, 212, 0.1) 100%); border: 1px solid rgba(79, 70, 229, 0.2);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 13px; font-weight: 700; color: var(--text-main);">Forecasted End Percentage</div>
+            <div style="font-size: 12px; color: var(--text-muted);">Assuming you attend all upcoming planned classes</div>
+          </div>
+          <div style="font-size: 28px; font-weight: 800; color: var(--primary);" id="outProjectedPct">
+            0.0%
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 18px; text-align: center;">
+        <a href="{{ url_for('student.reports') }}" class="btn btn-secondary btn-block">
+          <i class="fa-solid fa-file-arrow-down"></i> Export My Current Attendance Report
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

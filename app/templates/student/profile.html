@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Profile | SmartAttend{% endblock %}
+{% block page_heading %}Student Profile & Security Settings{% endblock %}
+{% block page_subheading %}Manage personal contact details, photo, and password credentials{% endblock %}
+
+{% block content %}
+<div class="dashboard-side-by-side">
+
+  <!-- LEFT: Profile Card & Information -->
+  <div class="dashboard-left">
+    <!-- Profile Overview Card -->
+    <div class="dashboard-card" style="text-align: center; padding: 32px 24px;">
+      <img src="{{ student.get_avatar_url() }}" alt="{{ student.full_name }}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid var(--accent-cyan); box-shadow: 0 4px 16px rgba(6, 182, 212, 0.3); margin-bottom: 16px;">
+      
+      <h2>{{ student.full_name }}</h2>
+      <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">{{ student.email }}</p>
+      
+      <div style="margin-top: 14px;">
+        <span class="badge badge-primary" style="font-size: 13px; padding: 6px 14px;">
+          <i class="fa-solid fa-id-card"></i> {{ student.registration_number }}
+        </span>
+      </div>
+
+      <!-- Quick Info Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 24px; text-align: left;">
+        <div style="background: var(--bg-card-subtle); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">University / College</div>
+          <div style="font-size: 13px; font-weight: 600; margin-top: 2px;">{{ student.university }}</div>
+        </div>
+
+        <div style="background: var(--bg-card-subtle); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Course & Branch</div>
+          <div style="font-size: 13px; font-weight: 600; margin-top: 2px;">{{ student.course }} - {{ student.branch }}</div>
+        </div>
+
+        <div style="background: var(--bg-card-subtle); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Current Semester</div>
+          <div style="font-size: 13px; font-weight: 600; margin-top: 2px;">Semester {{ student.semester }}</div>
+        </div>
+
+        <div style="background: var(--bg-card-subtle); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Account Status</div>
+          <div style="font-size: 13px; font-weight: 600; margin-top: 2px; color: #10b981;">
+            <i class="fa-solid fa-circle-check"></i> Active Student
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Profile Form -->
+    <div class="dashboard-card">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-user-pen" style="color: var(--primary);"></i> Edit Contact Information</h3>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('student.profile') }}" enctype="multipart/form-data">
+        {{ profile_form.hidden_tag() }}
+        <input type="hidden" name="submit_profile" value="1">
+
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          {{ profile_form.full_name(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          {{ profile_form.email(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          {{ profile_form.phone(class="form-control", placeholder="+1 (555) 000-0000") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Update Profile Avatar (PNG, JPG)</label>
+          {{ profile_form.avatar(class="form-control") }}
+        </div>
+
+        {{ profile_form.submit(class="btn btn-primary") }}
+      </form>
+    </div>
+  </div>
+
+  <!-- RIGHT: Password Change & Security -->
+  <div class="dashboard-right">
+    <!-- Password Change Card -->
+    <div class="dashboard-card">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-key" style="color: var(--primary);"></i> Change Password</h3>
+          <p>Protected by Argon2id cryptographic hashing</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('student.profile') }}">
+        {{ password_form.hidden_tag() }}
+        <input type="hidden" name="submit_password" value="1">
+
+        <div class="form-group">
+          <label class="form-label">Current Password</label>
+          {{ password_form.current_password(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          {{ password_form.new_password(class="form-control") }}
+          <span class="form-help">Minimum 8 characters with a mix of letters, numbers, and symbols.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirm New Password</label>
+          {{ password_form.confirm_password(class="form-control") }}
+        </div>
+
+        {{ password_form.submit(class="btn btn-gradient btn-block") }}
+      </form>
+    </div>
+
+    <!-- Attendance Summary Card -->
+    <div class="dashboard-card">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-award" style="color: #10b981;"></i> Semester Standing Summary</h3>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+        <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: var(--bg-card-subtle); border-radius: var(--radius-sm);">
+          <span>Regular Classes Attended:</span>
+          <strong>{{ data.total_attended }} / {{ data.total_conducted }}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: var(--bg-card-subtle); border-radius: var(--radius-sm);">
+          <span>Medical Adjustments Approved:</span>
+          <strong style="color: #0891b2;">+{{ data.total_medical_classes }} classes (+{{ data.overall_medical_pct }}%)</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: var(--bg-card-subtle); border-radius: var(--radius-sm);">
+          <span>Effective Final Attendance:</span>
+          <strong style="color: {{ data.overall_eligibility.color }};">{{ data.overall_final_pct }}%</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: var(--bg-card-subtle); border-radius: var(--radius-sm);">
+          <span>Final Eligibility Status:</span>
+          <span class="badge {{ data.overall_eligibility.badge_class }}">{{ data.overall_eligibility.status }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

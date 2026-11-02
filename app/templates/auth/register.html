@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Registration | SmartAttend</title>
+  
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+
+  <style>
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      background: radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.08) 0%, rgba(6, 182, 212, 0.05) 90%), var(--bg-main);
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 640px;
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-xl);
+      padding: 36px;
+      position: relative;
+    }
+  </style>
+</head>
+<body class="auth-page">
+
+  <div class="auth-card">
+    <div style="position: absolute; top: 20px; right: 20px;">
+      <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Theme">
+        <i class="fa-solid fa-moon" id="themeIcon"></i>
+      </button>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="width: 52px; height: 52px; margin: 0 auto 12px; border-radius: var(--radius-md); background: var(--primary-gradient); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px;">
+        <i class="fa-solid fa-graduation-cap"></i>
+      </div>
+      <h2>Student Registration</h2>
+      <p style="color: var(--text-muted); font-size: 14px;">Create your SmartAttend student portal account</p>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="margin-bottom: 20px;">
+          {% for category, message in messages %}
+            <div class="flash-alert alert-{{ category }}" style="padding: 12px 14px; border-radius: var(--radius-md); font-size: 13px; margin-bottom: 8px;">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('auth.register') }}">
+      {{ form.hidden_tag() }}
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          {{ form.full_name(class="form-control", placeholder="e.g. Alex Morgan") }}
+          {% if form.full_name.errors %}<span class="form-error">{{ form.full_name.errors[0] }}</span>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Registration / Roll Number</label>
+          {{ form.registration_number(class="form-control", placeholder="e.g. RA2111003010042") }}
+          {% if form.registration_number.errors %}<span class="form-error">{{ form.registration_number.errors[0] }}</span>{% endif %}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          {{ form.email(class="form-control", placeholder="alex@smartattend.edu") }}
+          {% if form.email.errors %}<span class="form-error">{{ form.email.errors[0] }}</span>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Portal Username</label>
+          {{ form.username(class="form-control", placeholder="e.g. alexmorgan") }}
+          {% if form.username.errors %}<span class="form-error">{{ form.username.errors[0] }}</span>{% endif %}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label class="form-label">Degree / Program</label>
+          {{ form.course(class="form-select") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Semester</label>
+          {{ form.semester(class="form-control") }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Department / Branch</label>
+        {{ form.branch(class="form-select") }}
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          {{ form.password(class="form-control", placeholder="Min 8 characters") }}
+          {% if form.password.errors %}<span class="form-error">{{ form.password.errors[0] }}</span>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          {{ form.confirm_password(class="form-control", placeholder="Re-enter password") }}
+          {% if form.confirm_password.errors %}<span class="form-error">{{ form.confirm_password.errors[0] }}</span>{% endif %}
+        </div>
+      </div>
+
+      {{ form.submit(class="btn btn-gradient btn-block btn-lg") }}
+    </form>
+
+    <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-muted);">
+      Already registered? <a href="{{ url_for('auth.login') }}" style="font-weight: 600;">Sign in to your account</a>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

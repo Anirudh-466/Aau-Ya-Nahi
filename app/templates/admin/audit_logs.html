@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Security Audit Logs | Admin SmartAttend{% endblock %}
+{% block page_heading %}Security Audits & Suspicious Activities 🛡️{% endblock %}
+{% block page_subheading %}Immutable event trail of administrative actions, medical status changes, logins, and access alerts{% endblock %}
+
+{% block content %}
+<!-- Severity Filter Bar -->
+<div class="dashboard-card" style="margin-bottom: 24px; padding: 14px 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; gap: 8px;">
+      <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-sm {% if not selected_severity %}btn-primary{% else %}btn-secondary{% endif %}">
+        All Events
+      </a>
+      <a href="{{ url_for('admin.audit_logs', severity='SECURITY_ALERT') }}" class="btn btn-sm {% if selected_severity == 'SECURITY_ALERT' %}btn-danger{% else %}btn-secondary{% endif %}">
+        <i class="fa-solid fa-triangle-exclamation"></i> Security Alerts
+      </a>
+      <a href="{{ url_for('admin.audit_logs', severity='WARNING') }}" class="btn btn-sm {% if selected_severity == 'WARNING' %}btn-primary{% else %}btn-secondary{% endif %}">
+        <i class="fa-solid fa-circle-exclamation"></i> Warnings
+      </a>
+      <a href="{{ url_for('admin.audit_logs', severity='INFO') }}" class="btn btn-sm {% if selected_severity == 'INFO' %}btn-primary{% else %}btn-secondary{% endif %}">
+        <i class="fa-solid fa-circle-info"></i> Normal Info
+      </a>
+    </div>
+
+    <div style="font-size: 13px; color: var(--text-muted);">
+      Total records: <strong>{{ logs|length }}</strong>
+    </div>
+  </div>
+</div>
+
+<!-- Audit Log Table -->
+<div class="dashboard-card">
+  {% if logs %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Severity</th>
+            <th>Event Action</th>
+            <th>User Account</th>
+            <th>Target</th>
+            <th>IP Address</th>
+            <th>Event Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td style="white-space: nowrap; font-size: 12px; color: var(--text-muted);">
+              {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+            </td>
+            <td>
+              {% if log.severity == 'SECURITY_ALERT' %}
+                <span class="badge badge-danger"><i class="fa-solid fa-skull-crossbones"></i> Alert</span>
+              {% elif log.severity == 'WARNING' %}
+                <span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Warning</span>
+              {% else %}
+                <span class="badge badge-secondary"><i class="fa-solid fa-info"></i> Info</span>
+              {% endif %}
+            </td>
+            <td><strong><code>{{ log.action }}</code></strong></td>
+            <td>
+              {% if log.user %}
+                <strong>{{ log.user.username }}</strong>
+                <span style="font-size: 11px; color: var(--text-muted);">({{ log.user.role }})</span>
+              {% else %}
+                <span style="color: var(--text-muted);">Anonymous / System</span>
+              {% endif %}
+            </td>
+            <td style="font-size: 12px;">
+              {{ log.target_type or '—' }}{% if log.target_id %} #{{ log.target_id }}{% endif %}
+            </td>
+            <td style="font-size: 12px; color: var(--text-muted);"><code>{{ log.ip_address or '127.0.0.1' }}</code></td>
+            <td style="font-size: 12px; max-width: 380px;">{{ log.details }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 48px; color: var(--text-muted);">
+      <i class="fa-solid fa-shield-check" style="font-size: 40px; color: #10b981; margin-bottom: 12px;"></i>
+      <p>No audit log events found for this filter.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

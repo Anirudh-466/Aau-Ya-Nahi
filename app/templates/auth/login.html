@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In | SmartAttend - Student Attendance & Medical Management</title>
+  
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+
+  <style>
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.08) 0%, rgba(6, 182, 212, 0.05) 90%), var(--bg-main);
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-xl);
+      padding: 40px;
+      position: relative;
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .auth-logo {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 16px;
+      border-radius: var(--radius-lg);
+      background: var(--primary-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 28px;
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.35);
+    }
+    .demo-accounts {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-top: 24px;
+    }
+  </style>
+</head>
+<body class="auth-page">
+
+  <div class="auth-card">
+    <div style="position: absolute; top: 20px; right: 20px;">
+      <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Theme">
+        <i class="fa-solid fa-moon" id="themeIcon"></i>
+      </button>
+    </div>
+
+    <div class="auth-header">
+      <div class="auth-logo">
+        <i class="fa-solid fa-graduation-cap"></i>
+      </div>
+      <h2>SmartAttend</h2>
+      <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+        Intelligent Student Attendance & Medical Management System
+      </p>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="margin-bottom: 20px;">
+          {% for category, message in messages %}
+            <div class="flash-alert alert-{{ category }}" style="padding: 12px 14px; border-radius: var(--radius-md); font-size: 13px; margin-bottom: 8px;
+              {% if category == 'success' %}background: var(--safe-bg); color: #065f46; border: 1px solid var(--safe-border);
+              {% elif category == 'danger' %}background: var(--danger-bg); color: #991b1b; border: 1px solid var(--danger-border);
+              {% else %}background: var(--warning-bg); color: #92400e; border: 1px solid var(--warning-border);{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('auth.login') }}">
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        <label class="form-label">Registration No. / Email / Username</label>
+        {{ form.identity(class="form-control", id="loginIdentity", placeholder="e.g. RA2111003010042 or alex.morgan@smartattend.edu", autofocus=true) }}
+        {% if form.identity.errors %}
+          <span class="form-error">{{ form.identity.errors[0] }}</span>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        {{ form.password(class="form-control", id="loginPassword", placeholder="Enter your password") }}
+        {% if form.password.errors %}
+          <span class="form-error">{{ form.password.errors[0] }}</span>
+        {% endif %}
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 13px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          {{ form.remember() }}
+          <span style="color: var(--text-muted);">Remember this device</span>
+        </label>
+      </div>
+
+      {{ form.submit(class="btn btn-gradient btn-block btn-lg") }}
+    </form>
+
+    <!-- Quick Demo Accounts One-Click Fill -->
+    <div class="demo-accounts">
+      <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">
+        <i class="fa-solid fa-key" style="color: var(--primary);"></i> One-Click Demo Credentials:
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button type="button" class="btn btn-sm btn-secondary" onclick="fillCredentials('alex.morgan@smartattend.edu', 'Student@12345')">
+          <i class="fa-solid fa-user-graduate"></i> Student Demo
+        </button>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="fillCredentials('admin@smartattend.edu', 'Admin@12345')">
+          <i class="fa-solid fa-user-shield"></i> Admin Demo
+        </button>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 24px; font-size: 13px; color: var(--text-muted);">
+      Don't have an account? 
+      <a href="{{ url_for('auth.register') }}" style="font-weight: 600;">Register as Student</a>
+    </div>
+
+    <div style="text-align: center; margin-top: 14px; font-size: 11px; color: var(--text-light);">
+      <i class="fa-solid fa-lock"></i> Protected by Argon2id cryptographic hashing & CSRF protection
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script>
+    function fillCredentials(id, pass) {
+      document.getElementById('loginIdentity').value = id;
+      document.getElementById('loginPassword').value = pass;
+    }
+  </script>
+</body>
+</html>

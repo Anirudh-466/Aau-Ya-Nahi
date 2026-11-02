@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Official Attendance Reports | SmartAttend{% endblock %}
+{% block page_heading %}Official Attendance & Medical Reports{% endblock %}
+{% block page_subheading %}Generate and export certified student attendance certificates with medical verification signatures{% endblock %}
+
+{% block content %}
+<div class="dashboard-side-by-side" style="grid-template-columns: 1fr 1fr;">
+  <!-- Export PDF Card -->
+  <div class="dashboard-card" style="border: 2px solid rgba(79, 70, 229, 0.3);">
+    <div class="card-header-clean">
+      <div class="card-title-group">
+        <h3><i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Certified PDF Attendance Report</h3>
+        <p>Official institutional certificate suitable for examination eligibility and fee waiver claims</p>
+      </div>
+    </div>
+
+    <div style="padding: 16px; background: var(--bg-card-subtle); border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 20px;">
+      <h4 style="font-size: 14px; margin-bottom: 8px;"><i class="fa-solid fa-certificate" style="color: var(--primary);"></i> Included Report Sections:</h4>
+      <ul style="font-size: 13px; color: var(--text-muted); margin-left: 20px; line-height: 1.8;">
+        <li>Student registration, branch, and semester metadata</li>
+        <li>Aggregated attendance metrics (Regular % and Final %)</li>
+        <li>Full Subject-wise table with approved medical adjustments</li>
+        <li>Official institutional formula disclosure statement</li>
+        <li>Formal verification signature blocks (Student, Faculty Advisor, Registrar)</li>
+      </ul>
+    </div>
+
+    <div style="display: flex; gap: 12px;">
+      <a href="{{ url_for('student.download_pdf_report') }}" class="btn btn-gradient btn-lg btn-block">
+        <i class="fa-solid fa-download"></i> Download Certified PDF Report
+      </a>
+    </div>
+  </div>
+
+  <!-- Report Summary Preview Card -->
+  <div class="dashboard-card">
+    <div class="card-header-clean">
+      <div class="card-title-group">
+        <h3><i class="fa-solid fa-eye" style="color: var(--primary);"></i> Live Report Summary Snapshot</h3>
+        <p>Current semester standings to be exported</p>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: var(--bg-card-subtle); border-radius: var(--radius-sm);">
+        <span style="color: var(--text-muted);">Student Name:</span>
+        <strong>{{ student.full_name }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: var(--bg-card-subtle); border-radius: var(--radius-sm);">
+        <span style="color: var(--text-muted);">Registration Number:</span>
+        <strong>{{ student.registration_number }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: var(--bg-card-subtle); border-radius: var(--radius-sm);">
+        <span style="color: var(--text-muted);">Total Conducted:</span>
+        <strong>{{ data.total_conducted }} Classes</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: var(--bg-card-subtle); border-radius: var(--radius-sm);">
+        <span style="color: var(--text-muted);">Medically Approved:</span>
+        <strong style="color: #0891b2;">+{{ data.total_medical_classes }} Classes (+{{ data.overall_medical_pct }}%)</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: var(--bg-card-subtle); border-radius: var(--radius-sm);">
+        <span style="color: var(--text-muted);">Final Attendance:</span>
+        <strong style="color: {{ data.overall_eligibility.color }}; font-size: 16px;">{{ data.overall_final_pct }}%</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: var(--bg-card-subtle); border-radius: var(--radius-sm);">
+        <span style="color: var(--text-muted);">Exam Status:</span>
+        <span class="badge {{ data.overall_eligibility.badge_class }}">{{ data.overall_eligibility.label }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ attendance.subject.name }} | SmartAttend{% endblock %}
+{% block page_heading %}{{ attendance.subject.name }} ({{ attendance.subject.code }}){% endblock %}
+{% block page_subheading %}Course details • Faculty: {{ attendance.subject.faculty_name }} • Semester {{ attendance.subject.semester }} • {{ attendance.subject.credits }} Credits{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Conducted Classes</span>
+      <div class="stat-value">{{ attendance.total_classes }}</div>
+      <div class="stat-subtext">Total course sessions</div>
+    </div>
+    <div class="stat-icon icon-blue"><i class="fa-solid fa-chalkboard"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Attended Classes</span>
+      <div class="stat-value" style="color: var(--primary);">{{ attendance.attended_classes }}</div>
+      <div class="stat-subtext">Missed: {{ attendance.missed_classes }} classes</div>
+    </div>
+    <div class="stat-icon icon-purple"><i class="fa-solid fa-user-check"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Medical Classes</span>
+      <div class="stat-value" style="color: #0891b2;">{{ attendance.medical_classes }}</div>
+      <div class="stat-subtext">Approved medical credits</div>
+    </div>
+    <div class="stat-icon icon-cyan"><i class="fa-solid fa-notes-medical"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Final Attendance</span>
+      <div class="stat-value" style="color: {{ subject_info.eligibility.color }};">
+        {{ subject_info.final_percentage }}%
+      </div>
+      <div class="stat-subtext">
+        <span class="badge {{ subject_info.eligibility.badge_class }}">
+          {{ subject_info.eligibility.status }}
+        </span>
+      </div>
+    </div>
+    <div class="stat-icon {% if subject_info.eligibility.status == 'Safe' %}icon-green{% elif subject_info.eligibility.status == 'Warning' %}icon-amber{% else %}icon-red{% endif %}">
+      <i class="fa-solid fa-award"></i>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-side-by-side">
+  <div class="dashboard-left">
+    <!-- Chronological Session History for this Subject -->
+    <div class="dashboard-card">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i> Class Sessions Log</h3>
+          <p>Chronological attendance history for {{ attendance.subject.name }}</p>
+        </div>
+      </div>
+
+      {% if records %}
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Recorded By</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in records %}
+              <tr>
+                <td><strong>{{ r.session_date.strftime('%B %d, %Y') }}</strong></td>
+                <td>
+                  {% if r.status == 'Present' %}
+                    <span class="badge badge-safe">Present</span>
+                  {% elif r.status == 'Medical' %}
+                    <span class="badge" style="background: rgba(6, 182, 212, 0.15); color: #0891b2;">Medical</span>
+                  {% elif r.status == 'Late' %}
+                    <span class="badge badge-warning">Late</span>
+                  {% else %}
+                    <span class="badge badge-danger">Absent</span>
+                  {% endif %}
+                </td>
+                <td>{{ r.recorded_by }}</td>
+                <td>{{ r.remarks or '—' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p style="color: var(--text-muted); text-align: center; padding: 20px;">No session logs found.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="dashboard-right">
+    <!-- Subject Recovery & Projection -->
+    <div class="dashboard-card calc-card-highlight">
+      <div class="card-header-clean" style="border: none; padding: 0; margin-bottom: 12px;">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-calculator" style="color: var(--primary);"></i> Subject Status & Forecast</h3>
+        </div>
+      </div>
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Target: <strong>{{ calc.target_threshold }}%</strong>
+      </div>
+      <div class="calc-result-grid" style="grid-template-columns: 1fr; margin-top: 0; gap: 12px;">
+        <div class="calc-pill-metric">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Required Classes to Reach Target</div>
+          <div class="calc-pill-value" style="color: #d97706;">{{ calc.required_classes_to_reach_target }} Classes</div>
+        </div>
+        <div class="calc-pill-metric">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Max Safe Misses</div>
+          <div class="calc-pill-value" style="color: #059669;">{{ calc.max_allowed_bunks }} Classes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Medical Claims for this Subject -->
+    <div class="dashboard-card">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-file-medical" style="color: #0891b2;"></i> Medical Leaves for this Subject</h3>
+        </div>
+      </div>
+      {% if medical_apps %}
+        {% for app in medical_apps %}
+        <div style="padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-card-subtle); margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between;">
+            <strong>{{ app.application_number }}</strong>
+            <span class="badge {{ app.status_badge_class }}">{{ app.status }}</span>
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+            Requested: {{ app.requested_classes }} classes | Approved: {{ app.approved_classes }} classes
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 14px;">No medical claims filed for this subject.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

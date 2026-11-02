@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}My Attendance | SmartAttend{% endblock %}
+{% block page_heading %}My Subject Attendance & Class Logs{% endblock %}
+{% block page_subheading %}Comprehensive attendance tracking and session history for {{ student.full_name }}{% endblock %}
+
+{% block content %}
+<!-- Subject Attendance Table Card -->
+<div class="dashboard-card" style="margin-bottom: 28px;">
+  <div class="card-header-clean">
+    <div class="card-title-group">
+      <h3><i class="fa-solid fa-table-list" style="color: var(--primary);"></i> Current Semester Course Attendance</h3>
+      <p>Calculated according to {{ data.formula_info.mode.replace('_', ' ').title() }} Institutional Policy (Safe threshold: {{ data.formula_info.threshold }}%)</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{{ url_for('student.reports') }}" class="btn btn-sm btn-secondary">
+        <i class="fa-solid fa-file-pdf"></i> Download PDF
+      </a>
+      <a href="{{ url_for('student.calculator') }}" class="btn btn-sm btn-gradient">
+        <i class="fa-solid fa-calculator"></i> Calculator
+      </a>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Subject Name</th>
+          <th>Code</th>
+          <th>Faculty</th>
+          <th>Total</th>
+          <th>Attended</th>
+          <th>Missed</th>
+          <th>Regular %</th>
+          <th>Medical %</th>
+          <th>Final %</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in data.subjects %}
+        <tr>
+          <td>
+            <strong>{{ s.subject_name }}</strong>
+            <div style="font-size: 11px; color: var(--text-muted);">{{ s.credits }} Academic Credits</div>
+          </td>
+          <td><code>{{ s.subject_code }}</code></td>
+          <td>{{ s.faculty_name }}</td>
+          <td><strong>{{ s.total_classes }}</strong></td>
+          <td style="color: var(--primary); font-weight: 600;">{{ s.attended_classes }}</td>
+          <td style="color: var(--danger);">{{ s.missed_classes }}</td>
+          <td>{{ s.regular_percentage }}%</td>
+          <td style="color: var(--accent-cyan); font-weight: 600;">+{{ s.medical_percentage }}%</td>
+          <td>
+            <div style="font-weight: 800; color: {{ s.eligibility.color }};">
+              {{ s.final_percentage }}%
+            </div>
+            <div class="progress-track" style="margin-top: 4px; width: 70px;">
+              <div class="progress-fill" style="width: {{ s.final_percentage }}%; background-color: {{ s.eligibility.color }};"></div>
+            </div>
+          </td>
+          <td>
+            <span class="badge {{ s.eligibility.badge_class }}">
+              {{ s.eligibility.status }}
+            </span>
+          </td>
+          <td>
+            <a href="{{ url_for('student.subject_detail', subject_id=s.subject_id) }}" class="btn btn-sm btn-secondary">
+              Details
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Chronological Attendance History Logs Card -->
+<div class="dashboard-card">
+  <div class="card-header-clean">
+    <div class="card-title-group">
+      <h3><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> Chronological Class Session History</h3>
+      <p>Audit trail of official lecture attendance sessions</p>
+    </div>
+
+    <!-- Subject Filter Form -->
+    <form method="GET" action="{{ url_for('student.my_attendance') }}" style="display: flex; gap: 8px;">
+      <select name="subject_id" class="form-select" style="padding: 6px 12px; font-size: 13px;" onchange="this.form.submit()">
+        <option value="">All Subjects</option>
+        {% for sub in all_subjects %}
+          <option value="{{ sub.subject.id }}" {% if selected_subject_id == sub.subject.id %}selected{% endif %}>
+            {{ sub.subject.code }} - {{ sub.subject.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  {% if records %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Subject</th>
+            <th>Code</th>
+            <th>Attendance Status</th>
+            <th>Recorded By</th>
+            <th>Remarks / Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr>
+            <td><strong>{{ r.session_date.strftime('%B %d, %Y') }}</strong></td>
+            <td>{{ r.subject.name }}</td>
+            <td><code>{{ r.subject.code }}</code></td>
+            <td>
+              {% if r.status == 'Present' %}
+                <span class="badge badge-safe"><i class="fa-solid fa-check"></i> Present</span>
+              {% elif r.status == 'Medical' %}
+                <span class="badge" style="background: rgba(6, 182, 212, 0.15); color: #0891b2; border: 1px solid rgba(6, 182, 212, 0.3);">
+                  <i class="fa-solid fa-stethoscope"></i> Medical Excused
+                </span>
+              {% elif r.status == 'Late' %}
+                <span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Late</span>
+              {% else %}
+                <span class="badge badge-danger"><i class="fa-solid fa-xmark"></i> Absent</span>
+              {% endif %}
+            </td>
+            <td style="color: var(--text-muted); font-size: 12px;">{{ r.recorded_by }}</td>
+            <td style="font-size: 12px; color: var(--text-muted);">{{ r.remarks or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+      <i class="fa-solid fa-calendar-xmark" style="font-size: 36px; margin-bottom: 10px; opacity: 0.5;"></i>
+      <p>No individual session records found for the selected filter.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

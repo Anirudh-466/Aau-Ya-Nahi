@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify Medical Leaves | Admin SmartAttend{% endblock %}
+{% block page_heading %}Medical Certificate Verification & Approval Queue 📋{% endblock %}
+{% block page_subheading %}Authenticate uploaded doctor slips, approve/reject medical attendance, and attach administrative audit notes{% endblock %}
+
+{% block content %}
+<!-- Status Filter Bar -->
+<div class="dashboard-card" style="margin-bottom: 24px; padding: 14px 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; gap: 8px;">
+      <a href="{{ url_for('admin.medical_requests', status='Pending') }}" class="btn btn-sm {% if status_filter == 'Pending' %}btn-primary{% else %}btn-secondary{% endif %}">
+        <i class="fa-solid fa-hourglass-half"></i> Pending Queue
+      </a>
+      <a href="{{ url_for('admin.medical_requests', status='Approved') }}" class="btn btn-sm {% if status_filter == 'Approved' %}btn-primary{% else %}btn-secondary{% endif %}">
+        <i class="fa-solid fa-check"></i> Approved Records
+      </a>
+      <a href="{{ url_for('admin.medical_requests', status='Rejected') }}" class="btn btn-sm {% if status_filter == 'Rejected' %}btn-primary{% else %}btn-secondary{% endif %}">
+        <i class="fa-solid fa-xmark"></i> Rejected Records
+      </a>
+    </div>
+
+    <div style="font-size: 13px; color: var(--text-muted);">
+      Showing <strong>{{ applications|length }}</strong> applications in {{ status_filter }} status
+    </div>
+  </div>
+</div>
+
+<!-- Applications Table -->
+<div class="dashboard-card">
+  {% if applications %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Application No.</th>
+            <th>Student Name & Reg</th>
+            <th>Subject</th>
+            <th>Leave Period</th>
+            <th>Requested</th>
+            <th>Approved</th>
+            <th>Certificate Document</th>
+            <th>Status</th>
+            <th>Action Decision</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for app in applications %}
+          <tr>
+            <td>
+              <code>{{ app.application_number }}</code>
+              <div style="font-size: 11px; color: var(--text-muted);">{{ app.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+            </td>
+            <td>
+              <strong>{{ app.student.full_name }}</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">{{ app.student.registration_number }} • Sem {{ app.student.semester }}</div>
+            </td>
+            <td>
+              <strong>{{ app.subject.name }}</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">{{ app.subject.code }}</div>
+            </td>
+            <td>
+              {{ app.start_date.strftime('%b %d') }} to {{ app.end_date.strftime('%b %d, %Y') }}
+              <div style="font-size: 11px; color: var(--text-muted);">{{ app.duration_days }} day(s) duration</div>
+            </td>
+            <td><strong style="color: var(--primary);">{{ app.requested_classes }}</strong></td>
+            <td><strong style="color: #059669;">{{ app.approved_classes }}</strong></td>
+            <td>
+              <button class="btn btn-sm btn-secondary" 
+                      data-preview-cert="{{ url_for('files.get_medical_file', filename=app.certificate_filename) }}" 
+                      data-filename="{{ app.certificate_original_name }}">
+                <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> View Doc
+              </button>
+            </td>
+            <td>
+              <span class="badge {{ app.status_badge_class }}">{{ app.status }}</span>
+            </td>
+            <td>
+              <button class="btn btn-sm btn-gradient" onclick="openReviewModal('{{ app.id }}', '{{ app.application_number }}', '{{ app.student.full_name }}', '{{ app.subject.name }}', '{{ app.requested_classes }}', '{{ app.reason|escape }}', '{{ app.admin_remarks or '' }}')">
+                <i class="fa-solid fa-signature"></i> Review / Decide
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 48px; color: var(--text-muted);">
+      <i class="fa-regular fa-folder-open" style="font-size: 40px; margin-bottom: 12px; opacity: 0.5;"></i>
+      <p>No medical applications found with status '{{ status_filter }}'.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Modal: Medical Decision / Review Modal -->
+<div class="modal-overlay" id="medicalReviewModal">
+  <div class="modal-window">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-stamp" style="color: var(--primary);"></i> Review Medical Application</h3>
+      <button class="modal-close-btn">&times;</button>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin.medical_requests') }}">
+      {{ form.hidden_tag() }}
+      <input type="hidden" name="application_id" id="modalAppId" value="">
+
+      <div class="modal-body">
+        <div style="padding: 12px; background: var(--bg-card-subtle); border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 13px; color: var(--text-muted);">Application:</span>
+            <strong id="modalAppNum"></strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 13px; color: var(--text-muted);">Student:</span>
+            <strong id="modalStudentName"></strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 13px; color: var(--text-muted);">Subject:</span>
+            <strong id="modalSubject"></strong>
+          </div>
+          <div style="margin-top: 8px; font-size: 12px; color: var(--text-main); border-top: 1px solid var(--border-light); padding-top: 6px;">
+            <strong>Student Diagnosis Reason:</strong> <span id="modalReason"></span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Official Decision</label>
+          {{ form.action(class="form-select", id="modalDecisionSelect") }}
+        </div>
+
+        <div class="form-group" id="approvedClassesGroup">
+          <label class="form-label">Approved Medical Attendance Classes</label>
+          {{ form.approved_classes(class="form-control", id="modalApprovedClasses") }}
+          <span class="form-help">Number of class hours credited to this subject's attendance.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Administrative Remarks & Verification Notes</label>
+          {{ form.admin_remarks(class="form-textarea", id="modalRemarks", rows=3, placeholder="e.g. Verified hospital discharge certificate and physician stamp.") }}
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-muted); background: var(--bg-card-subtle); padding: 10px; border-radius: var(--radius-sm);">
+          <i class="fa-solid fa-lock"></i> Approving this request will automatically update the student's attendance records and recalculate their final percentage.
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button>
+        {{ form.submit(class="btn btn-gradient") }}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function openReviewModal(appId, appNum, student, subject, reqClasses, reason, remarks) {
+    document.getElementById('modalAppId').value = appId;
+    document.getElementById('modalAppNum').textContent = appNum;
+    document.getElementById('modalStudentName').textContent = student;
+    document.getElementById('modalSubject').textContent = subject;
+    document.getElementById('modalApprovedClasses').value = reqClasses;
+    document.getElementById('modalReason').textContent = reason;
+    document.getElementById('modalRemarks').value = remarks || '';
+
+    openModal('medicalReviewModal');
+  }
+</script>
+{% endblock %}

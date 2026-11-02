@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}429 Rate Limit Exceeded | SmartAttend{% endblock %}
+{% block page_heading %}Too Many Requests{% endblock %}
+
+{% block content %}
+<div class="dashboard-card" style="text-align: center; padding: 60px 20px; max-width: 600px; margin: 40px auto;">
+  <div style="font-size: 64px; color: var(--warning); margin-bottom: 16px;">
+    <i class="fa-solid fa-gauge-simple-high"></i>
+  </div>
+  <h2 style="font-size: 26px; margin-bottom: 8px;">Rate Limit Exceeded</h2>
+  <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 24px;">
+    To protect the academic system against brute-force attacks and abuse, requests are limited. Please wait a minute and try again.
+  </p>
+  <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">Back to Login</a>
+</div>
+{% endblock %}

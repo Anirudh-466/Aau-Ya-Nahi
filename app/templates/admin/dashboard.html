@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard | SmartAttend{% endblock %}
+{% block page_heading %}Administration Command Center 🛡️{% endblock %}
+{% block page_subheading %}Institution-wide attendance metrics, medical leave verification, and system audits{% endblock %}
+
+{% block content %}
+<!-- Metrics Grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Enrolled Students</span>
+      <div class="stat-value">{{ total_students }}</div>
+      <div class="stat-subtext">Active student records</div>
+    </div>
+    <div class="stat-icon icon-blue"><i class="fa-solid fa-users"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Active Subjects</span>
+      <div class="stat-value">{{ total_subjects }}</div>
+      <div class="stat-subtext">Semester courses</div>
+    </div>
+    <div class="stat-icon icon-purple"><i class="fa-solid fa-book-bookmark"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Pending Medical Claims</span>
+      <div class="stat-value" style="color: #f59e0b;">{{ pending_medical }}</div>
+      <div class="stat-subtext">Require certificate verification</div>
+    </div>
+    <div class="stat-icon icon-amber"><i class="fa-solid fa-file-medical"></i></div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Shortage Risk Count</span>
+      <div class="stat-value" style="color: #ef4444;">{{ shortage_count }}</div>
+      <div class="stat-subtext">Below {{ settings.get('required_attendance_threshold', 75.0) }}% target</div>
+    </div>
+    <div class="stat-icon icon-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+  </div>
+</div>
+
+<!-- Quick Actions Banner -->
+<div class="dashboard-card" style="margin-bottom: 28px; background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(6, 182, 212, 0.08) 100%);">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <h3 style="font-size: 16px; margin-bottom: 4px;"><i class="fa-solid fa-bolt" style="color: var(--primary);"></i> Administrative Operations</h3>
+      <p style="font-size: 13px; color: var(--text-muted);">Quick shortcuts to core academic workflows and compliance reports</p>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+      <a href="{{ url_for('admin.medical_requests') }}" class="btn btn-gradient">
+        <i class="fa-solid fa-stethoscope"></i> Verify Medical Claims ({{ pending_medical }})
+      </a>
+      <a href="{{ url_for('admin.attendance_management') }}" class="btn btn-secondary">
+        <i class="fa-solid fa-pen-to-square"></i> Record Attendance
+      </a>
+      <a href="{{ url_for('admin.export_csv') }}" class="btn btn-secondary">
+        <i class="fa-solid fa-file-csv"></i> Export Master CSV
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-side-by-side">
+
+  <!-- LEFT: Pending Medical Verification Queue -->
+  <div class="dashboard-left">
+    <div class="dashboard-card">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-inbox" style="color: #f59e0b;"></i> Pending Medical Applications Requiring Action</h3>
+          <p>Review attached medical certificates and authorize class adjustments</p>
+        </div>
+        <a href="{{ url_for('admin.medical_requests') }}" class="btn btn-sm btn-secondary">View All</a>
+      </div>
+
+      {% if pending_apps %}
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>App No.</th>
+                <th>Student</th>
+                <th>Subject</th>
+                <th>Missed</th>
+                <th>Dates</th>
+                <th>Certificate</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for app in pending_apps %}
+              <tr>
+                <td><code>{{ app.application_number }}</code></td>
+                <td>
+                  <strong>{{ app.student.full_name }}</strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">{{ app.student.registration_number }}</div>
+                </td>
+                <td>{{ app.subject.name }}</td>
+                <td><strong style="color: var(--primary);">{{ app.requested_classes }}</strong></td>
+                <td style="font-size: 12px;">{{ app.start_date.strftime('%b %d') }} - {{ app.end_date.strftime('%b %d') }}</td>
+                <td>
+                  <button class="btn btn-sm btn-secondary" data-preview-cert="{{ url_for('files.get_medical_file', filename=app.certificate_filename) }}" data-filename="{{ app.certificate_original_name }}">
+                    <i class="fa-solid fa-file-pdf"></i> View
+                  </button>
+                </td>
+                <td>
+                  <a href="{{ url_for('admin.medical_requests', status='Pending') }}" class="btn btn-sm btn-gradient">
+                    Review
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div style="text-align: center; padding: 32px; color: var(--text-muted);">
+          <i class="fa-solid fa-circle-check" style="font-size: 36px; color: #10b981; margin-bottom: 8px;"></i>
+          <p>All medical applications have been reviewed!</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- RIGHT: Recent Security & Audit Logs -->
+  <div class="dashboard-right">
+    <div class="dashboard-card">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> Security & System Audit Trail</h3>
+          <p>Real-time log of security events and modifications</p>
+        </div>
+        <a href="{{ url_for('admin.audit_logs') }}" class="btn btn-sm btn-secondary">All Logs</a>
+      </div>
+
+      {% if recent_logs %}
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          {% for log in recent_logs %}
+          <div style="padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-card-subtle); font-size: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <strong style="color: {% if log.severity == 'SECURITY_ALERT' %}var(--danger){% elif log.severity == 'WARNING' %}var(--warning){% else %}var(--primary){% endif %};">
+                {{ log.action }}
+              </strong>
+              <span style="font-size: 11px; color: var(--text-light);">{{ log.created_at.strftime('%H:%M:%S') }}</span>
+            </div>
+            <div style="color: var(--text-muted); font-size: 11px;">
+              User: <strong>{{ log.user.username if log.user else 'System' }}</strong> | IP: {{ log.ip_address or 'Local' }}
+            </div>
+            <div style="color: var(--text-main); margin-top: 3px;">
+              {{ log.details }}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p style="text-align: center; color: var(--text-muted); padding: 20px;">No audit events recorded.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

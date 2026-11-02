@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | {{ student.full_name }}{% endblock %}
+{% block page_heading %}Welcome back, {{ student.full_name }}! 👋{% endblock %}
+{% block page_subheading %}Student Dashboard • Registration: {{ student.registration_number or 'N/A' }} • Semester {{ student.semester }} • {{ student.course }} ({{ student.branch }}){% endblock %}
+
+{% block content %}
+<!-- Student Profile Welcome Banner -->
+<div class="welcome-hero">
+  <div class="welcome-content">
+    <h2>Academic Attendance & Medical Overview</h2>
+    <p>Track your semester requirements, medical credits, and forecast exam eligibility.</p>
+    <div class="welcome-meta">
+      <span><i class="fa-solid fa-id-badge"></i> Roll No: <strong>{{ student.registration_number }}</strong></span>
+      <span><i class="fa-solid fa-graduation-cap"></i> {{ student.branch }}</span>
+      <span><i class="fa-solid fa-calendar-days"></i> Semester {{ student.semester }}</span>
+      <span><i class="fa-solid fa-building-columns"></i> {{ student.university }}</span>
+    </div>
+  </div>
+  <div class="welcome-actions">
+    <a href="{{ url_for('student.calculator') }}" class="btn btn-secondary">
+      <i class="fa-solid fa-calculator"></i> Attendance Calculator
+    </a>
+    <button class="btn btn-gradient" data-modal-target="applyMedicalModal">
+      <i class="fa-solid fa-file-medical"></i> Apply Medical Attendance
+    </button>
+  </div>
+</div>
+
+<!-- Stat Cards Row -->
+<div class="stats-grid">
+  <!-- Total Subjects -->
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Total Subjects</span>
+      <div class="stat-value">{{ data.total_subjects }}</div>
+      <div class="stat-subtext">Active Enrolled Courses</div>
+    </div>
+    <div class="stat-icon icon-blue">
+      <i class="fa-solid fa-book-open"></i>
+    </div>
+  </div>
+
+  <!-- Overall Regular Attendance -->
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Regular Attendance</span>
+      <div class="stat-value">{{ data.overall_regular_pct }}%</div>
+      <div class="stat-subtext">{{ data.total_attended }} of {{ data.total_conducted }} classes</div>
+    </div>
+    <div class="stat-icon icon-purple">
+      <i class="fa-solid fa-clock"></i>
+    </div>
+  </div>
+
+  <!-- Overall Medical Attendance -->
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Medical Attendance</span>
+      <div class="stat-value">{{ data.overall_medical_pct }}%</div>
+      <div class="stat-subtext">+{{ data.total_medical_classes }} approved classes</div>
+    </div>
+    <div class="stat-icon icon-cyan">
+      <i class="fa-solid fa-notes-medical"></i>
+    </div>
+  </div>
+
+  <!-- Final Attendance & Eligibility -->
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">Final Attendance</span>
+      <div class="stat-value" style="color: {{ data.overall_eligibility.color }};">
+        {{ data.overall_final_pct }}%
+      </div>
+      <div class="stat-subtext">
+        <span class="badge {{ data.overall_eligibility.badge_class }}">
+          {{ data.overall_eligibility.status }}
+        </span>
+      </div>
+    </div>
+    <div class="stat-icon {% if data.overall_eligibility.status == 'Safe' %}icon-green{% elif data.overall_eligibility.status == 'Warning' %}icon-amber{% else %}icon-red{% endif %}">
+      <i class="fa-solid fa-award"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Upcoming Attendance Warnings Banner (If Any) -->
+{% if data.warnings %}
+<div class="warnings-container" style="margin-bottom: 24px;">
+  {% for w in data.warnings %}
+    <div class="warning-alert-card {% if w.severity == 'danger' %}danger{% endif %}">
+      <i class="fa-solid {% if w.severity == 'danger' %}fa-triangle-exclamation{% else %}fa-circle-exclamation{% endif %} alert-icon"></i>
+      <div class="alert-text">
+        <h4>{{ w.subject }} ({{ w.code }}) - {{ w.percentage }}% Attendance</h4>
+        <p>{{ w.message }}</p>
+      </div>
+      <a href="{{ url_for('student.calculator') }}" class="btn btn-sm btn-secondary" style="margin-left: auto;">
+        Plan Recovery
+      </a>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- TWO-COLUMN SIDE-BY-SIDE DASHBOARD LAYOUT -->
+<div class="dashboard-side-by-side">
+
+  <!-- LEFT SIDE: Overall Attendance, Subject-wise Table, Progress Bars, Eligibility, Analytics -->
+  <div class="dashboard-left">
+
+    <!-- Main Attendance Table Card -->
+    <div class="dashboard-card">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> Subject-wise Attendance Breakdown</h3>
+          <p>Institutional minimum threshold: {{ data.formula_info.threshold }}% | Current Formula: {{ data.formula_info.mode.replace('_', ' ').title() }}</p>
+        </div>
+        <div class="status-summary-pills" style="display: flex; gap: 8px;">
+          <span class="badge badge-safe">{{ data.safe_count }} Safe</span>
+          <span class="badge badge-warning">{{ data.warning_count }} Warning</span>
+          <span class="badge badge-danger">{{ data.shortage_count }} Shortage</span>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Code</th>
+              <th>Total</th>
+              <th>Attended</th>
+              <th>Missed</th>
+              <th>Regular %</th>
+              <th>Medical %</th>
+              <th>Final %</th>
+              <th>Eligibility</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in data.subjects %}
+            <tr>
+              <td>
+                <div style="font-weight: 600;">
+                  <a href="{{ url_for('student.subject_detail', subject_id=s.subject_id) }}" style="color: var(--text-main);">
+                    {{ s.subject_name }}
+                  </a>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted);">{{ s.faculty_name }}</div>
+              </td>
+              <td><code>{{ s.subject_code }}</code></td>
+              <td><strong>{{ s.total_classes }}</strong></td>
+              <td style="color: var(--primary); font-weight: 600;">{{ s.attended_classes }}</td>
+              <td style="color: var(--danger);">{{ s.missed_classes }}</td>
+              <td>{{ s.regular_percentage }}%</td>
+              <td style="color: var(--accent-cyan); font-weight: 600;">+{{ s.medical_percentage }}%</td>
+              <td>
+                <div style="font-weight: 700; color: {{ s.eligibility.color }};">
+                  {{ s.final_percentage }}%
+                </div>
+                <div class="progress-track" style="margin-top: 4px; width: 70px;">
+                  <div class="progress-fill" style="width: {{ s.final_percentage }}%; background-color: {{ s.eligibility.color }};"></div>
+                </div>
+              </td>
+              <td>
+                <span class="badge {{ s.eligibility.badge_class }}">
+                  <i class="fa-solid {% if s.eligibility.status == 'Safe' %}fa-check{% elif s.eligibility.status == 'Warning' %}fa-triangle-exclamation{% else %}fa-xmark{% endif %}"></i>
+                  {{ s.eligibility.status }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Visual Analytics: Charts Section -->
+    <div class="charts-grid">
+      <!-- Subject-wise Attendance Bar Chart -->
+      <div class="dashboard-card">
+        <div class="card-header-clean">
+          <div class="card-title-group">
+            <h3><i class="fa-solid fa-chart-column" style="color: var(--primary);"></i> Subject-wise Attendance</h3>
+            <p>Regular vs. Medical benefit contribution</p>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="subjectAttendanceChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Overall Attendance Doughnut Chart -->
+      <div class="dashboard-card">
+        <div class="card-header-clean">
+          <div class="card-title-group">
+            <h3><i class="fa-solid fa-chart-pie" style="color: var(--accent-cyan);"></i> Class Distribution</h3>
+            <p>Attended, Medically Approved & Missed</p>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="overallDoughnutChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Trend & Comparison Charts -->
+    <div class="charts-grid">
+      <div class="dashboard-card">
+        <div class="card-header-clean">
+          <div class="card-title-group">
+            <h3><i class="fa-solid fa-chart-line" style="color: var(--primary);"></i> Monthly Trend</h3>
+            <p>Semester progression trajectory</p>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="monthlyTrendChart"></canvas>
+        </div>
+      </div>
+
+      <div class="dashboard-card">
+        <div class="card-header-clean">
+          <div class="card-title-group">
+            <h3><i class="fa-solid fa-scale-balanced" style="color: #10b981;"></i> Regular vs Medical Impact</h3>
+            <p>Before & after official medical credits</p>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="regularVsMedicalChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT SIDE: DEDICATED MEDICAL ATTENDANCE PANEL (MOST IMPORTANT FEATURE) -->
+  <div class="dashboard-right">
+
+    <!-- Dedicated Medical Attendance Panel -->
+    <div class="dashboard-card" style="border: 2px solid rgba(6, 182, 212, 0.35); box-shadow: 0 4px 20px rgba(6, 182, 212, 0.08);">
+      <div class="card-header-clean" style="border-bottom-color: rgba(6, 182, 212, 0.2);">
+        <div class="card-title-group">
+          <h3 style="color: #0891b2;">
+            <i class="fa-solid fa-hand-holding-medical"></i> Medical Attendance Panel
+          </h3>
+          <p>Official medical adjustments applied to your subjects</p>
+        </div>
+        <button class="btn btn-sm btn-gradient" data-modal-target="applyMedicalModal">
+          <i class="fa-solid fa-plus"></i> New Claim
+        </button>
+      </div>
+
+      <!-- Medical Metrics Header Summary -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+        <div style="background: rgba(6, 182, 212, 0.08); border-radius: var(--radius-md); padding: 12px; text-align: center;">
+          <div style="font-size: 11px; font-weight: 600; color: #0891b2; text-transform: uppercase;">Total Medical Classes</div>
+          <div style="font-size: 24px; font-weight: 800; color: #0891b2; margin-top: 2px;">{{ data.total_medical_classes }}</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Approved hours</div>
+        </div>
+
+        <div style="background: rgba(79, 70, 229, 0.08); border-radius: var(--radius-md); padding: 12px; text-align: center;">
+          <div style="font-size: 11px; font-weight: 600; color: var(--primary); text-transform: uppercase;">Medical % Boost</div>
+          <div style="font-size: 24px; font-weight: 800; color: var(--primary); margin-top: 2px;">+{{ data.overall_medical_pct }}%</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Overall benefit</div>
+        </div>
+
+        <div style="background: rgba(16, 185, 129, 0.08); border-radius: var(--radius-md); padding: 12px; text-align: center;">
+          <div style="font-size: 11px; font-weight: 600; color: #059669; text-transform: uppercase;">Approved Days</div>
+          <div style="font-size: 24px; font-weight: 800; color: #059669; margin-top: 2px;">{{ data.total_approved_days }}</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Medically excused</div>
+        </div>
+
+        <div style="background: rgba(245, 158, 11, 0.08); border-radius: var(--radius-md); padding: 12px; text-align: center;">
+          <div style="font-size: 11px; font-weight: 600; color: #d97706; text-transform: uppercase;">Pending Claims</div>
+          <div style="font-size: 24px; font-weight: 800; color: #d97706; margin-top: 2px;">{{ data.pending_apps_count }}</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Awaiting review</div>
+        </div>
+      </div>
+
+      <!-- Medical Attendance for EVERY Subject -->
+      <h4 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 12px;">
+        Subject-wise Medical Attendance
+      </h4>
+
+      <table class="medical-subject-table">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Medical Classes</th>
+            <th style="text-align: right;">Medical %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for med in data.medical_breakdown %}
+          <tr>
+            <td>
+              <div style="font-weight: 600;">{{ med.subject_name }}</div>
+              <div style="font-size: 11px; color: var(--text-muted);">{{ med.subject_code }}</div>
+            </td>
+            <td>
+              <span class="medical-pill">
+                <i class="fa-solid fa-stethoscope"></i> {{ med.medical_classes }} classes
+              </span>
+            </td>
+            <td style="text-align: right; font-weight: 700; color: #0891b2;">
+              +{{ med.medical_percentage }}%
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- Student Authorization Notice -->
+      <div style="margin-top: 20px; padding: 12px; border-radius: var(--radius-md); background: var(--bg-card-subtle); border: 1px solid var(--border-color); font-size: 12px; color: var(--text-muted);">
+        <i class="fa-solid fa-lock" style="color: var(--primary);"></i> 
+        <strong>Integrity Protection:</strong> Submitted and officially approved medical records cannot be altered by students. Contact the department faculty advisor for disputes.
+      </div>
+    </div>
+
+    <!-- Recent Medical Applications Tracker -->
+    <div class="dashboard-card">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> Medical Applications Status</h3>
+          <p>Recent claims submitted for verification</p>
+        </div>
+        <a href="{{ url_for('student.medical_attendance') }}" class="btn btn-sm btn-secondary">View All</a>
+      </div>
+
+      {% if recent_medical_apps %}
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for app in recent_medical_apps %}
+          <div style="padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-card-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-weight: 700; font-size: 13px;">{{ app.application_number }}</span>
+              <span class="badge {{ app.status_badge_class }}">{{ app.status }}</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-main);">
+              <strong>{{ app.subject.name }}</strong> ({{ app.requested_classes }} classes requested)
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+              {{ app.start_date.strftime('%b %d') }} to {{ app.end_date.strftime('%b %d, %Y') }} ({{ app.duration_days }} days)
+            </div>
+            {% if app.admin_remarks %}
+            <div style="margin-top: 6px; font-size: 11px; color: var(--primary); background: var(--primary-subtle); padding: 4px 8px; border-radius: 4px;">
+              <strong>Remarks:</strong> {{ app.admin_remarks }}
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+          <i class="fa-regular fa-folder-open" style="font-size: 32px; margin-bottom: 8px; opacity: 0.5;"></i>
+          <p>No recent medical applications.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Quick Attendance Calculator Card -->
+    <div class="dashboard-card calc-card-highlight">
+      <div class="card-header-clean" style="border: none; margin-bottom: 12px; padding: 0;">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);"></i> Quick Attendance Recovery</h3>
+          <p>Forecast required classes instantly</p>
+        </div>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Curious if you can reach 75% or 80% by the end of the term? Test potential scenarios live.
+      </p>
+      <a href="{{ url_for('student.calculator') }}" class="btn btn-gradient btn-block">
+        Open Smart Calculator & Predictor
+      </a>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Modal: Apply Medical Attendance Record -->
+<div class="modal-overlay" id="applyMedicalModal">
+  <div class="modal-window">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-file-medical" style="color: var(--accent-cyan);"></i> Apply Medical Attendance</h3>
+      <button class="modal-close-btn">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('student.medical_attendance') }}" enctype="multipart/form-data">
+      {{ med_form.hidden_tag() }}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Subject</label>
+          {{ med_form.subject_id(class="form-select") }}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Start Date</label>
+            {{ med_form.start_date(class="form-control", id="startDate") }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">End Date</label>
+            {{ med_form.end_date(class="form-control", id="endDate") }}
+          </div>
+        </div>
+
+        <div style="font-size: 12px; font-weight: 600; margin-top: -12px; margin-bottom: 16px;" id="leaveDurationText">
+          Duration: 1 day
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Number of Classes Missed</label>
+          {{ med_form.requested_classes(class="form-control", placeholder="e.g. 4") }}
+          <span class="form-help">Enter the total lecture/lab sessions missed due to medical illness.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Medical Certificate / Hospital Slip (PDF, JPG, PNG)</label>
+          <div class="file-dropzone" onclick="document.getElementById('certificateInput').click();">
+            <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+            <div class="dropzone-text">Click to choose document or drag here</div>
+            <div class="dropzone-subtext">Accepted formats: PDF, PNG, JPG (Max 16 MB)</div>
+          </div>
+          {{ med_form.certificate(id="certificateInput", style="display: none;") }}
+          <div class="file-chosen-name" style="margin-top: 8px; font-size: 12px; color: var(--primary); display: none;"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Reason for Absence & Diagnosis</label>
+          {{ med_form.reason(class="form-textarea", rows=3, placeholder="State medical reason (e.g. Viral infection, admitted to hospital...)") }}
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-muted); background: var(--bg-card-subtle); padding: 10px; border-radius: var(--radius-sm);">
+          <i class="fa-solid fa-shield-halved"></i> All uploaded medical documents are securely encrypted and verified by university administrators.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button>
+        {{ med_form.submit(class="btn btn-gradient") }}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

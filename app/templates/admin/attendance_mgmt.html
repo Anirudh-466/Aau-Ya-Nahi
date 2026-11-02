@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Update Attendance | Admin SmartAttend{% endblock %}
+{% block page_heading %}Official Recorded Attendance Management ✏️{% endblock %}
+{% block page_subheading %}Modify official class counts, audit attendance records, and adjust student attendance figures{% endblock %}
+
+{% block content %}
+<div class="dashboard-side-by-side" style="grid-template-columns: 320px 1fr;">
+
+  <!-- LEFT: Student Selector List -->
+  <div class="dashboard-left" style="gap: 16px;">
+    <div class="dashboard-card" style="padding: 16px;">
+      <h3 style="font-size: 15px; margin-bottom: 12px;"><i class="fa-solid fa-users"></i> Select Student</h3>
+      
+      <div style="display: flex; flex-direction: column; gap: 6px; max-height: 550px; overflow-y: auto;">
+        {% for st in students %}
+        <a href="{{ url_for('admin.attendance_management', student_id=st.id) }}" 
+           class="nav-item {% if selected_student and selected_student.id == st.id %}active{% endif %}"
+           style="color: var(--text-main); padding: 10px 12px; border: 1px solid var(--border-light);">
+          <div>
+            <div style="font-weight: 600; font-size: 13px;">{{ st.full_name }}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">{{ st.registration_number }} • Sem {{ st.semester }}</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Attendance Record Tables for Selected Student -->
+  <div class="dashboard-right">
+    {% if selected_student %}
+      <div class="dashboard-card">
+        <div class="card-header-clean">
+          <div class="card-title-group">
+            <h3>
+              <i class="fa-solid fa-graduation-cap" style="color: var(--primary);"></i>
+              {{ selected_student.full_name }} ({{ selected_student.registration_number }})
+            </h3>
+            <p>{{ selected_student.course }} • {{ selected_student.branch }} • Semester {{ selected_student.semester }}</p>
+          </div>
+          <div>
+            <a href="{{ url_for('admin.export_student_pdf', student_id=selected_student.id) }}" class="btn btn-sm btn-secondary">
+              <i class="fa-solid fa-file-pdf"></i> Generate PDF
+            </a>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Subject</th>
+                <th>Total Conducted</th>
+                <th>Attended</th>
+                <th>Approved Medical</th>
+                <th>Final %</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for att in attendances %}
+              <tr>
+                <td>
+                  <strong>{{ att.subject.name }}</strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">{{ att.subject.code }}</div>
+                </td>
+                <td><strong>{{ att.total_classes }}</strong></td>
+                <td style="color: var(--primary); font-weight: 600;">{{ att.attended_classes }}</td>
+                <td style="color: #0891b2; font-weight: 600;">{{ att.medical_classes }}</td>
+                <td>
+                  <strong style="color: {{ att.get_eligibility().color }};">
+                    {{ att.calculate_final_percentage() }}%
+                  </strong>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-secondary" onclick="openOverrideModal('{{ selected_student.id }}', '{{ att.subject.id }}', '{{ att.subject.name }}', '{{ att.total_classes }}', '{{ att.attended_classes }}', '{{ att.medical_classes }}')">
+                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% else %}
+      <div class="dashboard-card" style="text-align: center; padding: 48px; color: var(--text-muted);">
+        <p>Please select a student from the left directory to view and update records.</p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Modal: Override Attendance Record -->
+<div class="modal-overlay" id="overrideModal">
+  <div class="modal-window">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-pen-to-square" style="color: var(--primary);"></i> Edit Official Attendance</h3>
+      <button class="modal-close-btn">&times;</button>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin.attendance_management') }}">
+      {{ form.hidden_tag() }}
+      <input type="hidden" name="student_id" id="overrideStudentId">
+      <input type="hidden" name="subject_id" id="overrideSubjectId">
+
+      <div class="modal-body">
+        <div style="margin-bottom: 16px; font-weight: 600; font-size: 15px; color: var(--primary);" id="overrideSubjectTitle">
+          Subject Name
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Total Conducted Classes</label>
+          {{ form.total_classes(class="form-control", id="overrideTotal") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Classes Attended by Student</label>
+          {{ form.attended_classes(class="form-control", id="overrideAttended") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Approved Medical Classes</label>
+          {{ form.medical_classes(class="form-control", id="overrideMedical") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Administrative Reason / Override Audit Note</label>
+          {{ form.remarks(class="form-control", placeholder="e.g. Corrected attendance register discrepancy with faculty sheet") }}
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-muted); background: var(--bg-card-subtle); padding: 10px; border-radius: var(--radius-sm);">
+          <i class="fa-solid fa-shield-halved"></i> All attendance overrides are permanently logged in the security audit trail.
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary modal-cancel-btn">Cancel</button>
+        {{ form.submit(class="btn btn-primary") }}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function openOverrideModal(studentId, subjectId, subjectName, total, attended, medical) {
+    document.getElementById('overrideStudentId').value = studentId;
+    document.getElementById('overrideSubjectId').value = subjectId;
+    document.getElementById('overrideSubjectTitle').textContent = subjectName;
+    document.getElementById('overrideTotal').value = total;
+    document.getElementById('overrideAttended').value = attended;
+    document.getElementById('overrideMedical').value = medical;
+
+    openModal('overrideModal');
+  }
+</script>
+{% endblock %}

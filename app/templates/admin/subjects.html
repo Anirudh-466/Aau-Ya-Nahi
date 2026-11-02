@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Subjects | Admin SmartAttend{% endblock %}
+{% block page_heading %}Academic Subjects & Course Curriculum 📚{% endblock %}
+{% block page_subheading %}Add new courses, configure faculty assignments, and activate/deactivate semester offerings{% endblock %}
+
+{% block content %}
+<div class="dashboard-side-by-side" style="grid-template-columns: 1fr 360px;">
+
+  <!-- LEFT: Subjects Table -->
+  <div class="dashboard-left">
+    <div class="dashboard-card">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-book-open" style="color: var(--primary);"></i> Enrolled Academic Courses</h3>
+          <p>Total active courses: {{ subjects|length }}</p>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Subject Name</th>
+              <th>Semester</th>
+              <th>Department</th>
+              <th>Credits</th>
+              <th>Faculty</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sub in subjects %}
+            <tr>
+              <td><code>{{ sub.code }}</code></td>
+              <td><strong>{{ sub.name }}</strong></td>
+              <td>Sem {{ sub.semester }}</td>
+              <td>{{ sub.department }}</td>
+              <td>{{ sub.credits }}</td>
+              <td>{{ sub.faculty_name }}</td>
+              <td>
+                {% if sub.is_active %}
+                  <span class="badge badge-safe"><i class="fa-solid fa-check"></i> Active</span>
+                {% else %}
+                  <span class="badge badge-secondary"><i class="fa-solid fa-pause"></i> Inactive</span>
+                {% endif %}
+              </td>
+              <td>
+                <form method="POST" action="{{ url_for('admin.toggle_subject', subject_id=sub.id) }}" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm {% if sub.is_active %}btn-secondary{% else %}btn-success{% endif %}">
+                    {% if sub.is_active %}Deactivate{% else %}Activate{% endif %}
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Add Subject Form -->
+  <div class="dashboard-right">
+    <div class="dashboard-card" style="border: 2px solid rgba(79, 70, 229, 0.25);">
+      <div class="card-header-clean">
+        <div class="card-title-group">
+          <h3><i class="fa-solid fa-plus" style="color: var(--primary);"></i> Add New Course</h3>
+          <p>Register a new subject for students</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('admin.subjects') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          <label class="form-label">Subject Code</label>
+          {{ form.code(class="form-control", placeholder="e.g. CS606") }}
+          {% if form.code.errors %}<span class="form-error">{{ form.code.errors[0] }}</span>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Subject Name</label>
+          {{ form.name(class="form-control", placeholder="e.g. Cloud Computing & DevOps") }}
+          {% if form.name.errors %}<span class="form-error">{{ form.name.errors[0] }}</span>{% endif %}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Semester</label>
+            {{ form.semester(class="form-control") }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Credits</label>
+            {{ form.credits(class="form-control") }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Department</label>
+          {{ form.department(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Assigned Faculty Name</label>
+          {{ form.faculty_name(class="form-control", placeholder="e.g. Dr. Rajesh Kumar") }}
+          {% if form.faculty_name.errors %}<span class="form-error">{{ form.faculty_name.errors[0] }}</span>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description / Syllabus Overview</label>
+          {{ form.description(class="form-textarea", rows=2, placeholder="Brief outline of syllabus") }}
+        </div>
+
+        {{ form.submit(class="btn btn-gradient btn-block btn-lg") }}
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
