@@ -1,4 +1,6 @@
-# SmartAttend – Intelligent Student Attendance & Medical Management System
+https://aau-ya-nahi-simul.vercel.app/
+
+[# SmartAttend – Intelligent Student Attendance & Medical Management System
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Flask 3.1+](https://img.shields.io/badge/Flask-3.1-black.svg)](https://flask.palletsprojects.com/)
@@ -227,3 +229,4 @@ Attendance Management/
 
 ## 📄 License
 This project is licensed under the MIT License.
+](https://aau-ya-nahi-simul.vercel.app/)
